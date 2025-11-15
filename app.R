@@ -8,8 +8,8 @@ library(DT)
 library(tidyr)
 
 # Authenticate and load sheet
-gs4_auth(path = "minibusschedule-3b6faafdc285.json")  
-sheet_id <- "https://docs.google.com/spreadsheets/d/1RTD3_csVKKT8PLQDuYxMOY32f3_7afdPkD4s8Y1aBRY/edit?gid=0#gid=0"
+gs4_auth(path = "...")  
+sheet_id <- "..."
 
 # loading authorized businesses
 get_authorized_business <- function() {
