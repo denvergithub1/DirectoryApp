@@ -1,0 +1,522 @@
+import React, { useState, useEffect } from 'react';
+import { Search, ThumbsUp, ThumbsDown, Star, MapPin, DollarSign, Clock, Globe, Mail, RefreshCw } from 'lucide-react';
+
+const BusinessDirectory = () => {
+  const [businesses, setBusinesses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [userVotes, setUserVotes] = useState({});
+  const [comment, setComment] = useState('');
+  const [voteType, setVoteType] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Replace these with your actual Google Sheets CSV URLs
+  const SHEET_URL = 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE';
+  // To get the CSV URL: File → Share → Publish to web → Select sheet → CSV
+
+  useEffect(() => {
+    loadBusinessesFromSheet();
+    loadReviewsFromStorage();
+  }, []);
+
+  const loadBusinessesFromSheet = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // If no sheet URL is provided, use sample data
+      if (SHEET_URL === 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE') {
+        console.log('Using sample data. Please add your Google Sheets CSV URL.');
+        initializeSampleData();
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(SHEET_URL);
+      if (!response.ok) throw new Error('Failed to fetch sheet data');
+      
+      const csvText = await response.text();
+      const parsedData = parseCSV(csvText);
+      
+      setBusinesses(parsedData);
+      const cats = [...new Set(parsedData.map(b => b.category))];
+      setCategories(cats);
+      if (cats.length > 0) setSelectedCategory(cats[0]);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading sheet:', err);
+      setError('Failed to load business data. Using sample data.');
+      initializeSampleData();
+      setLoading(false);
+    }
+  };
+
+  const parseCSV = (csvText) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const businesses = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const business = {
+          id: i.toString()
+        };
+        
+        headers.forEach((header, index) => {
+          const key = header.toLowerCase().replace(/\s+/g, '');
+          business[key] = values[index].trim();
+        });
+        
+        // Map common column names
+        business.category = business.category || '';
+        business.name = business.name || '';
+        business.location = business.location || '';
+        business.price = business.price || '';
+        business.timesOpen = business.timesopen || business.timesOpen || '';
+        business.website = business.website || '';
+        business.contact = business.contact || '';
+        
+        businesses.push(business);
+      }
+    }
+    
+    return businesses;
+  };
+
+  const parseCSVLine = (line) => {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current);
+    
+    return values.map(v => v.replace(/^"|"$/g, ''));
+  };
+
+  const initializeSampleData = () => {
+    const sampleBusinesses = [
+      {
+        id: '1',
+        category: 'Restaurants',
+        name: 'Ocean View Cafe',
+        location: 'Castries Waterfront',
+        price: '$$',
+        timesOpen: 'Mon-Sat 8AM-10PM',
+        website: 'https://example.com',
+        contact: 'info@oceanview.lc'
+      },
+      {
+        id: '2',
+        category: 'Restaurants',
+        name: 'Spice Garden',
+        location: 'Rodney Bay',
+        price: '$$$',
+        timesOpen: 'Daily 11AM-11PM',
+        website: 'https://example.com',
+        contact: 'hello@spicegarden.lc'
+      },
+      {
+        id: '3',
+        category: 'Hotels',
+        name: 'Paradise Resort',
+        location: 'Soufriere',
+        price: '$$$$',
+        timesOpen: '24/7',
+        website: 'https://example.com',
+        contact: 'stay@paradiseresort.lc'
+      },
+      {
+        id: '4',
+        category: 'Hotels',
+        name: 'Beachside Inn',
+        location: 'Gros Islet',
+        price: '$$',
+        timesOpen: '24/7',
+        website: 'https://example.com',
+        contact: 'info@beachside.lc'
+      },
+      {
+        id: '5',
+        category: 'Services',
+        name: 'Island Car Rental',
+        location: 'Airport',
+        price: '$',
+        timesOpen: 'Daily 6AM-10PM',
+        website: 'https://example.com',
+        contact: 'rent@islandcars.lc'
+      }
+    ];
+
+    setBusinesses(sampleBusinesses);
+    const cats = [...new Set(sampleBusinesses.map(b => b.category))];
+    setCategories(cats);
+    if (cats.length > 0) setSelectedCategory(cats[0]);
+  };
+
+  const loadReviewsFromStorage = async () => {
+    try {
+      const storedReviews = await window.storage.list('review:', true);
+      
+      if (storedReviews && storedReviews.keys.length > 0) {
+        const reviewData = [];
+        for (const key of storedReviews.keys) {
+          try {
+            const result = await window.storage.get(key, true);
+            if (result) reviewData.push(JSON.parse(result.value));
+          } catch (e) {
+            console.log('Error loading review:', e);
+          }
+        }
+        setReviews(reviewData);
+      }
+    } catch (error) {
+      console.log('No existing reviews found');
+    }
+  };
+
+  const filteredBusinesses = businesses.filter(b => 
+    b.category === selectedCategory &&
+    (searchTerm === '' || b.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const calculateRating = (businessId) => {
+    const businessReviews = reviews.filter(r => r.businessId === businessId);
+    if (businessReviews.length === 0) return null;
+    
+    const scoreMap = { Excellent: 4, Good: 3, Satisfactory: 2, Poor: 1 };
+    const total = businessReviews.reduce((sum, r) => sum + scoreMap[r.vote], 0);
+    return (total / businessReviews.length).toFixed(2);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedBusiness || !voteType) return;
+    
+    const key = `${selectedBusiness.id}_voted`;
+    if (userVotes[key]) return;
+
+    const review = {
+      businessId: selectedBusiness.id,
+      businessName: selectedBusiness.name,
+      vote: voteType,
+      comment: comment,
+      timestamp: new Date().toISOString()
+    };
+
+    const reviewId = `review:${Date.now()}`;
+    try {
+      await window.storage.set(reviewId, JSON.stringify(review), true);
+      setReviews([...reviews, review]);
+      setUserVotes({ ...userVotes, [key]: true });
+      setComment('');
+      setVoteType(null);
+    } catch (error) {
+      console.error('Error saving review:', error);
+      alert('Failed to save review. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading businesses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto p-6">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-indigo-900 mb-2">Lucian Directory</h1>
+          <p className="text-gray-600 mb-4">Your guide to local businesses</p>
+          {error && (
+            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg inline-block">
+              {error}
+            </div>
+          )}
+          {SHEET_URL === 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE' && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-800 px-4 py-3 rounded-lg inline-block max-w-2xl">
+              <p className="font-semibold mb-2">📝 Setup Instructions:</p>
+              <ol className="text-left text-sm space-y-1">
+                <li>1. Open your Google Sheet</li>
+                <li>2. Go to File → Share → Publish to web</li>
+                <li>3. Select your sheet and choose "CSV" format</li>
+                <li>4. Copy the URL and replace SHEET_URL in the code</li>
+              </ol>
+            </div>
+          )}
+          <button
+            onClick={loadBusinessesFromSheet}
+            className="mt-4 inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <RefreshCw size={16} />
+            Refresh Data
+          </button>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4 text-indigo-900">Search</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search businesses..."
+                      className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="font-semibold mb-3 text-gray-700">Results ({filteredBusinesses.length})</h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredBusinesses.length > 0 ? (
+                    filteredBusinesses.map(business => (
+                      <button
+                        key={business.id}
+                        onClick={() => setSelectedBusiness(business)}
+                        className={`w-full text-left p-3 rounded-lg transition-colors ${
+                          selectedBusiness?.id === business.id
+                            ? 'bg-indigo-100 border-2 border-indigo-500'
+                            : 'bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900">{business.name}</div>
+                        <div className="text-sm text-gray-500">{business.location}</div>
+                        {calculateRating(business.id) && (
+                          <div className="text-xs text-yellow-600 mt-1">
+                            ⭐ {calculateRating(business.id)} / 4.0
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm">No results found</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {selectedBusiness && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-xl font-semibold mb-4 text-indigo-900">Submit Review</h2>
+                
+                <div className="flex gap-4 mb-4">
+                  <button
+                    onClick={() => setVoteType('Excellent')}
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                      voteType === 'Excellent'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <ThumbsUp className="mx-auto mb-1 text-green-600" size={24} />
+                    <div className="text-sm font-medium">Excellent</div>
+                  </button>
+                  <button
+                    onClick={() => setVoteType('Poor')}
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                      voteType === 'Poor'
+                        ? 'border-red-500 bg-red-50'
+                        : 'border-gray-200 hover:border-red-300'
+                    }`}
+                  >
+                    <ThumbsDown className="mx-auto mb-1 text-red-600" size={24} />
+                    <div className="text-sm font-medium">Poor</div>
+                  </button>
+                </div>
+
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Your comment..."
+                  className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500"
+                  rows="3"
+                />
+
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={!voteType || userVotes[`${selectedBusiness.id}_voted`]}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {userVotes[`${selectedBusiness.id}_voted`] ? 'Thank you for your review!' : 'Submit Review'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              {selectedBusiness ? (
+                <>
+                  <h2 className="text-3xl font-bold text-indigo-900 mb-6">{selectedBusiness.name}</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="text-indigo-600 flex-shrink-0 mt-1" size={20} />
+                      <div>
+                        <div className="font-semibold text-gray-700">Location</div>
+                        <div className="text-gray-600">{selectedBusiness.location || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="text-indigo-600 flex-shrink-0 mt-1" size={20} />
+                      <div>
+                        <div className="font-semibold text-gray-700">Price Range</div>
+                        <div className="text-gray-600">{selectedBusiness.price || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Clock className="text-indigo-600 flex-shrink-0 mt-1" size={20} />
+                      <div>
+                        <div className="font-semibold text-gray-700">Hours</div>
+                        <div className="text-gray-600">{selectedBusiness.timesOpen || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Star className="text-indigo-600 flex-shrink-0 mt-1" size={20} />
+                      <div>
+                        <div className="font-semibold text-gray-700">Rating</div>
+                        <div className="text-gray-600">
+                          {calculateRating(selectedBusiness.id) 
+                            ? `${calculateRating(selectedBusiness.id)} / 4.0 stars`
+                            : 'No reviews yet'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedBusiness.website && selectedBusiness.website !== '' && (
+                    <div className="mb-6">
+                      <a
+                        href={selectedBusiness.website.startsWith('http') ? selectedBusiness.website : `https://${selectedBusiness.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        <Globe size={20} />
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+
+                  {selectedBusiness.contact && selectedBusiness.contact !== '' && (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Mail size={20} className="text-indigo-600" />
+                        <span className="font-medium">Contact:</span>
+                        <span>{selectedBusiness.contact}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-6">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800">Recent Reviews</h3>
+                    <div className="space-y-4">
+                      {reviews
+                        .filter(r => r.businessId === selectedBusiness.id)
+                        .slice(-10)
+                        .reverse()
+                        .map((review, idx) => (
+                          <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                review.vote === 'Excellent' ? 'bg-green-100 text-green-800' :
+                                review.vote === 'Good' ? 'bg-blue-100 text-blue-800' :
+                                review.vote === 'Satisfactory' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {review.vote}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(review.timestamp).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {review.comment && (
+                              <p className="text-gray-700">{review.comment}</p>
+                            )}
+                          </div>
+                        ))}
+                      {reviews.filter(r => r.businessId === selectedBusiness.id).length === 0 && (
+                        <p className="text-gray-500 text-center py-4">No reviews yet. Be the first to review!</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-16">
+                  <Search className="mx-auto mb-4 text-gray-400" size={48} />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">Select a business</h3>
+                  <p className="text-gray-500">Choose a business from the list to view details</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+              <div className="text-center">
+                <p className="text-green-600 font-semibold mb-2">JSur copyright ©2023</p>
+                <p className="text-gray-700 font-medium mb-2">Sponsors:</p>
+                <p className="text-gray-600 text-sm mb-1">Silver Sponsor: JnBaptiste Foundation</p>
+                <p className="text-gray-600 text-sm mb-4">Gold sponsor: AGM Network Solution Advance Caribbean Businesses</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Contact me to include your business:</strong>{' '}
+                  <a href="mailto:jsurvey758@gmail.com" className="text-indigo-600 hover:text-indigo-800">
+                    jsurvey758@gmail.com
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BusinessDirectory;
