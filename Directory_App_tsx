@@ -15,7 +15,7 @@ const BusinessDirectory = () => {
   const [error, setError] = useState(null);
   
   // Replace these with your actual Google Sheets CSV URLs
-  const SHEET_URL = 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE';
+  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1RTD3_csVKKT8PLQDuYxMOY32f3_7afdPkD4s8Y1aBRY/edit?gid=0#gid=0';
   // To get the CSV URL: File → Share → Publish to web → Select sheet → CSV
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const BusinessDirectory = () => {
     
     try {
       // If no sheet URL is provided, use sample data
-      if (SHEET_URL === 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE') {
+      if (SHEET_URL === 'https://docs.google.com/spreadsheets/d/1RTD3_csVKKT8PLQDuYxMOY32f3_7afdPkD4s8Y1aBRY/edit?gid=0#gid=0') {
         console.log('Using sample data. Please add your Google Sheets CSV URL.');
         initializeSampleData();
         setLoading(false);
