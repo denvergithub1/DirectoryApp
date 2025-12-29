@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lucian Business Directory</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #312e81;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #4b5563;
+      margin-bottom: 1rem;
+    }
+
+    .error-msg {
+      background: #fef3c7;
+      border: 1px solid #facc15;
+      color: #854d0e;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      background: #4f46e5;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      margin-top: 1rem;
+    }
+
+    .btn:hover {
+      background: #4338ca;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr 2fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #312e81;
+      margin-bottom: 1rem;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      margin-bottom: 1rem;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-input {
+      position: relative;
+    }
+
+    .business-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .business-item {
+      width: 100%;
+      text-align: left;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: #f9fafb;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .business-item:hover {
+      background: #f3f4f6;
+    }
+
+    .business-item.selected {
+      background: #e0e7ff;
+      border: 2px solid #6366f1;
+    }
+
+    .business-name {
+      font-weight: 500;
+      color: #111827;
+    }
+
+    .business-location {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .business-rating {
+      font-size: 0.75rem;
+      color: #ca8a04;
+      margin-top: 0.25rem;
+    }
+
+    .review-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .review-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .review-btn:hover {
+      border-color: #d1d5db;
+    }
+
+    .review-btn.excellent {
+      border-color: #22c55e;
+      background: #f0fdf4;
+    }
+
+    .review-btn.poor {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .review-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .detail-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .detail-item {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .detail-value {
+      color: #4b5563;
+    }
+
+    .review-card {
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .review-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .badge-excellent {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-poor {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 0;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 4px solid #e5e7ff;
+      border-top: 4px solid #4f46e5;
+      border-radius: 50%;
+      width: 4rem;
+      height: 4rem;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .link {
+      color: #4f46e5;
+      text-decoration: none;
+    }
+
+    .link:hover {
+      color: #3730a3;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">
+      <div style="text-align: center;">
+        <div class="spinner"></div>
+        <p style="color: #4b5563; font-size: 1.125rem;">Loading businesses...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1RTD3_csVKKT8PLQDuYxMOY32f3_7afdPkD4s8Y1aBRY/export?format=csv&gid=0';
+
+    let businesses = [];
+    let categories = [];
+    let selectedCategory = '';
+    let searchTerm = '';
+    let selectedBusiness = null;
+    let reviews = [];
+    let userVotes = {};
+    let comment = '';
+    let voteType = null;
+    let error = null;
+
+    function parseCSV(csvText) {
+      const lines = csvText.split('\n').filter(line => line.trim());
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const result = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length === headers.length) {
+          const business = { id: i.toString() };
+          
+          headers.forEach((header, index) => {
+            const key = header.toLowerCase().replace(/\s+/g, '');
+            business[key] = values[index].trim();
+          });
+          
+          business.category = business.category || '';
+          business.name = business.name || '';
+          business.location = business.location || '';
+          business.price = business.price || '';
+          business.timesOpen = business.timesopen || business.timesOpen || '';
+          business.website = business.website || '';
+          business.contact = business.contact || '';
+          
+          result.push(business);
+        }
+      }
+      
+      return result;
+    }
+
+    function parseCSVLine(line) {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current);
+      return values.map(v => v.replace(/^"|"$/g, ''));
+    }
+
+    function initializeSampleData() {
+      businesses = [
+        {
+          id: '1', category: 'Restaurants', name: 'Ocean View Cafe',
+          location: 'Castries Waterfront', price: '$$', timesOpen: 'Mon-Sat 8AM-10PM',
+          website: 'https://example.com', contact: 'info@oceanview.lc'
+        },
+        {
+          id: '2', category: 'Restaurants', name: 'Spice Garden',
+          location: 'Rodney Bay', price: '$$$', timesOpen: 'Daily 11AM-11PM',
+          website: 'https://example.com', contact: 'hello@spicegarden.lc'
+        },
+        {
+          id: '3', category: 'Hotels', name: 'Paradise Resort',
+          location: 'Soufriere', price: '$$$$', timesOpen: '24/7',
+          website: 'https://example.com', contact: 'stay@paradiseresort.lc'
+        },
+        {
+          id: '4', category: 'Hotels', name: 'Beachside Inn',
+          location: 'Gros Islet', price: '$$', timesOpen: '24/7',
+          website: 'https://example.com', contact: 'info@beachside.lc'
+        },
+        {
+          id: '5', category: 'Services', name: 'Island Car Rental',
+          location: 'Airport', price: '$', timesOpen: 'Daily 6AM-10PM',
+          website: 'https://example.com', contact: 'rent@islandcars.lc'
+        }
+      ];
+      
+      categories = [...new Set(businesses.map(b => b.category))];
+      if (categories.length > 0) selectedCategory = categories[0];
+    }
+
+    function loadReviews() {
+      try {
+        const stored = localStorage.getItem('businessReviews');
+        if (stored) reviews = JSON.parse(stored);
+      } catch (e) {
+        console.log('No reviews found');
+      }
+    }
+
+    function calculateRating(businessId) {
+      const businessReviews = reviews.filter(r => r.businessId === businessId);
+      if (businessReviews.length === 0) return null;
+      
+      const scoreMap = { Excellent: 4, Poor: 1 };
+      const total = businessReviews.reduce((sum, r) => sum + scoreMap[r.vote], 0);
+      return (total / businessReviews.length).toFixed(2);
+    }
+
+    function getFilteredBusinesses() {
+      return businesses.filter(b => 
+        b.category === selectedCategory &&
+        (searchTerm === '' || b.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    function selectBusiness(business) {
+      selectedBusiness = business;
+      voteType = null;
+      comment = '';
+      render();
+    }
+
+    function submitReview() {
+      if (!selectedBusiness || !voteType) return;
+      
+      const key = `${selectedBusiness.id}_voted`;
+      if (userVotes[key]) return;
+
+      const review = {
+        businessId: selectedBusiness.id,
+        businessName: selectedBusiness.name,
+        vote: voteType,
+        comment: comment,
+        timestamp: new Date().toISOString()
+      };
+
+      reviews.push(review);
+      localStorage.setItem('businessReviews', JSON.stringify(reviews));
+      userVotes[key] = true;
+      comment = '';
+      voteType = null;
+      render();
+    }
+
+    async function loadData() {
+      try {
+        const response = await fetch(SHEET_URL);
+        if (!response.ok) throw new Error('Failed to fetch');
+        
+        const csvText = await response.text();
+        const parsed = parseCSV(csvText);
+        
+        if (parsed.length === 0) throw new Error('No data');
+        
+        businesses = parsed;
+        categories = [...new Set(businesses.map(b => b.category))];
+        if (categories.length > 0) selectedCategory = categories[0];
+        error = null;
+      } catch (e) {
+        console.error('Error loading data:', e);
+        error = 'Failed to load business data. Using sample data.';
+        initializeSampleData();
+      }
+      render();
+    }
+
+    function render() {
+      const filteredBusinesses = getFilteredBusinesses();
+      
+      document.getElementById('root').innerHTML = `
+        <div class="container">
+          <div class="header">
+            <h1 class="title">Lucian Directory</h1>
+            <p class="subtitle">Your guide to local businesses</p>
+            ${error ? `<div class="error-msg">${error}</div>` : ''}
+            <button class="btn" onclick="loadData()">🔄 Refresh Data</button>
+          </div>
+
+          <div class="main-grid">
+            <div>
+              <div class="card">
+                <h2 class="card-title">Search</h2>
+                
+                <label class="label">Category</label>
+                <select onchange="selectedCategory = this.value; render()">
+                  ${categories.map(cat => 
+                    `<option value="${cat}" ${cat === selectedCategory ? 'selected' : ''}>${cat}</option>`
+                  ).join('')}
+                </select>
+
+                <label class="label">Search</label>
+                <input 
+                  type="text" 
+                  placeholder="Search businesses..."
+                  value="${searchTerm}"
+                  oninput="searchTerm = this.value; render()"
+                />
+
+                <h3 class="label">Results (${filteredBusinesses.length})</h3>
+                <div class="business-list">
+                  ${filteredBusinesses.length > 0 ? 
+                    filteredBusinesses.map(business => `
+                      <button 
+                        class="business-item ${selectedBusiness?.id === business.id ? 'selected' : ''}"
+                        onclick='selectBusiness(${JSON.stringify(business)})'
+                      >
+                        <div class="business-name">${business.name}</div>
+                        <div class="business-location">${business.location}</div>
+                        ${calculateRating(business.id) ? 
+                          `<div class="business-rating">⭐ ${calculateRating(business.id)} / 4.0</div>` 
+                          : ''}
+                      </button>
+                    `).join('') 
+                    : '<p style="color: #6b7280; font-size: 0.875rem;">No results found</p>'
+                  }
+                </div>
+              </div>
+
+              ${selectedBusiness ? `
+                <div class="card">
+                  <h2 class="card-title">Submit Review</h2>
+                  
+                  <div class="review-buttons">
+                    <button 
+                      class="review-btn ${voteType === 'Excellent' ? 'excellent' : ''}"
+                      onclick="voteType = 'Excellent'; render()"
+                    >
+                      <div class="review-icon">👍</div>
+                      <div style="font-size: 0.875rem; font-weight: 500;">Excellent</div>
+                    </button>
+                    <button 
+                      class="review-btn ${voteType === 'Poor' ? 'poor' : ''}"
+                      onclick="voteType = 'Poor'; render()"
+                    >
+                      <div class="review-icon">👎</div>
+                      <div style="font-size: 0.875rem; font-weight: 500;">Poor</div>
+                    </button>
+                  </div>
+
+                  <textarea
+                    placeholder="Your comment..."
+                    rows="3"
+                    oninput="comment = this.value"
+                  >${comment}</textarea>
+
+                  <button 
+                    class="btn" 
+                    style="width: 100%;"
+                    onclick="submitReview()"
+                    ${!voteType || userVotes[selectedBusiness.id + '_voted'] ? 'disabled' : ''}
+                  >
+                    ${userVotes[selectedBusiness.id + '_voted'] ? 
+                      'Thank you for your review!' : 'Submit Review'}
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+
+            <div>
+              <div class="card" style="padding: 2rem;">
+                ${selectedBusiness ? `
+                  <h2 style="font-size: 1.875rem; font-weight: 700; color: #312e81; margin-bottom: 1.5rem;">
+                    ${selectedBusiness.name}
+                  </h2>
+                  
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <div>📍</div>
+                      <div>
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value">${selectedBusiness.location || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div>💰</div>
+                      <div>
+                        <div class="detail-label">Price Range</div>
+                        <div class="detail-value">${selectedBusiness.price || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div>🕐</div>
+                      <div>
+                        <div class="detail-label">Hours</div>
+                        <div class="detail-value">${selectedBusiness.timesOpen || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div>⭐</div>
+                      <div>
+                        <div class="detail-label">Rating</div>
+                        <div class="detail-value">
+                          ${calculateRating(selectedBusiness.id) ? 
+                            `${calculateRating(selectedBusiness.id)} / 4.0 stars` : 
+                            'No reviews yet'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  ${selectedBusiness.website ? `
+                    <div style="margin-bottom: 1.5rem;">
+                      <a 
+                        href="${selectedBusiness.website.startsWith('http') ? selectedBusiness.website : 'https://' + selectedBusiness.website}" 
+                        target="_blank"
+                        class="link"
+                        style="font-weight: 500;"
+                      >
+                        🌐 Visit Website
+                      </a>
+                    </div>
+                  ` : ''}
+
+                  ${selectedBusiness.contact ? `
+                    <div style="margin-bottom: 1.5rem; color: #374151;">
+                      <span style="font-weight: 500;">📧 Contact:</span> ${selectedBusiness.contact}
+                    </div>
+                  ` : ''}
+
+                  <div style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 1rem;">
+                      Recent Reviews
+                    </h3>
+                    ${reviews.filter(r => r.businessId === selectedBusiness.id).length > 0 ?
+                      reviews
+                        .filter(r => r.businessId === selectedBusiness.id)
+                        .slice(-10)
+                        .reverse()
+                        .map(review => `
+                          <div class="review-card">
+                            <div style="margin-bottom: 0.5rem;">
+                              <span class="review-badge ${review.vote === 'Excellent' ? 'badge-excellent' : 'badge-poor'}">
+                                ${review.vote}
+                              </span>
+                              <span style="font-size: 0.75rem; color: #6b7280; margin-left: 0.5rem;">
+                                ${new Date(review.timestamp).toLocaleDateString()}
+                              </span>
+                            </div>
+                            ${review.comment ? `<p style="color: #374151;">${review.comment}</p>` : ''}
+                          </div>
+                        `).join('')
+                      : '<p style="color: #6b7280; text-align: center; padding: 1rem 0;">No reviews yet. Be the first to review!</p>'
+                    }
+                  </div>
+                ` : `
+                  <div class="empty-state">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #4b5563; margin-bottom: 0.5rem;">
+                      Select a business
+                    </h3>
+                    <p style="color: #6b7280;">Choose a business from the list to view details</p>
+                  </div>
+                `}
+              </div>
+
+              <div class="card footer">
+                <p style="color: #16a34a; font-weight: 600; margin-bottom: 0.5rem;">JSur copyright ©2023</p>
+                <p style="color: #374151; font-weight: 500; margin-bottom: 0.5rem;">Sponsors:</p>
+                <p style="color: #4b5563; font-size: 0.875rem; margin-bottom: 0.25rem;">
+                  Silver Sponsor: JnBaptiste Foundation
+                </p>
+                <p style="color: #4b5563; font-size: 0.875rem; margin-bottom: 1rem;">
+                  Gold sponsor: AGM Network Solution Advance Caribbean Businesses
+                </p>
+                <p style="font-size: 0.875rem; color: #4b5563;">
+                  <strong>Contact me to include your business:</strong>
+                  <a href="mailto:jsurvey758@gmail.com" class="link">jsurvey758@gmail.com</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Initialize
+    loadReviews();
+    loadData();
+  </script>
+</body>
+</html>
